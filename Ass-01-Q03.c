@@ -6,45 +6,62 @@
 
 int filter(char *filter_filename, char *input_wavefilename, char *output_wavefilename)
 {
-
 	int coeff_num;
 	double *coeff_values; // Array of coefficient values
 
 	pcm_wavefile_header_t header;
-	char *data;
+	char *dataIn;
+	int16_t *dataCopy; //copy of dataIn in two bytes
+
+	double acc; //accumulator of FIR filtered data (u in lecture notes)
+	int16_t *dataOut; //filtered output data
 
 	printf("\n--> Reading filter coefficients - '%s'\n", filter_filename);
-	if (read_coefficients(&coeff_num, &coeff_values, filter_filename) != 0)
+	if(read_coefficients(&coeff_num, &coeff_values, &(*filter_filename)) != -1)
 	{
-		free(coeff_values);
+		printf("ERROR: reading filter file");
 		return -1;
 	}
 
 	printf("--> Reading audio file - '%s'\n", input_wavefilename);
-	if (read_pcm_wavefile(&header, &data, input_wavefilename) != 0)
+	if(read_pcm_wavefile(&header, &dataIn, &(*input_wavefilename)) != -1)
 	{
-		free(coeff_values);
-		free(data);
+		printf("ERROR: reading audio file\n");
 		return -1;
 	}
 
-	// printf("--> Filtering audio file - '%s'\n", output_wavefilename);
-	//
-	// FILTER DATA HERE
-	//
-	// printf("             ...done\n");
+	//allocate output memory
+	dataOut = malloc(header.Subchunk2Size);
+
+	dataCopy = (int16_t *)dataIn; //copy of dataIn in two bytes
+
+
+	for(int n = 0; n < (header.Subchunk2Size)/2; n++) //n < data size in bytes
+	{
+		acc = 0;
+
+		for(int k = 0; k < coeff_num; k++) //NOTE: if k is beyond the coeff_num, you add zero to acc
+		{
+			if (k > n) 		// if k is beyond dataset do nothing
+			{
+				acc += 0;
+			}
+			else 			// else apply filter
+			{
+				acc += (double)dataCopy[n-k]*(coeff_values[k]);
+			}
+		}
+
+		dataOut[n] = (uint16_t)acc; //typecasting double acc to uint_16
+	}
 
 	printf("--> Writing filtered audio file - '%s'\n", output_wavefilename);
-	if (write_pcm_wavefile(&header, data, output_wavefilename) != 0)
+	if(write_pcm_wavefile(&header, (char*)dataOut, output_wavefilename) == -1)
 	{
-		free(coeff_values);
-		free(data);
-		return -1;
+		printf("ERROR: writing audio file: %s\n", output_wavefilename);
 	}
 
+	free(dataCopy);
 
-	free(coeff_values);
-	free(data);
-
-	return 0;
+  return 0;
 }
