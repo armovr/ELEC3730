@@ -17,14 +17,14 @@ int filter(char *filter_filename, char *input_wavefilename, char *output_wavefil
 	int16_t *dataOut; //filtered output data
 
 	printf("\n--> Reading filter coefficients - '%s'\n", filter_filename);
-	if(read_coefficients(&coeff_num, &coeff_values, &(*filter_filename)) != -1)
+	if(read_coefficients(&coeff_num, &coeff_values, &(*filter_filename)) != 0)
 	{
 		printf("ERROR: reading filter file");
 		return -1;
 	}
 
 	printf("--> Reading audio file - '%s'\n", input_wavefilename);
-	if(read_pcm_wavefile(&header, &dataIn, &(*input_wavefilename)) != -1)
+	if(read_pcm_wavefile(&header, &dataIn, &(*input_wavefilename)) != 0)
 	{
 		printf("ERROR: reading audio file\n");
 		return -1;
